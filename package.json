@@ -1,40 +1,32 @@
 {
-  "name": "discord-mailbox",
-  "version": "2.0.0",
-  "description": "",
-  "main": "src/workers.ts",
-  "scripts": {
-    "dev": "wrangler dev --remote",
-    "deploy": "wrangler deploy",
-    "generate-types": "wrangler types --experimental-include-runtime",
-    "lint": "eslint"
-  },
-  "author": "Ayaan <minsu.kim@lunaiz.com>",
-  "dependencies": {
-    "@discordjs/rest": "^2.4.3",
-    "discord-api-types": "^0.37.119",
-    "discord-interactions": "^4.1.1",
-    "h3": "^1.15.0",
-    "html-to-text": "^9.0.5",
-    "marked": "^15.0.7",
-    "mimetext": "^3.0.27",
-    "postal-mime": "^2.4.3"
-  },
-  "devDependencies": {
-    "@types/html-to-text": "^9.0.4",
-    "@types/mimetext": "^2.0.4",
-    "@types/node": "^22.13.5",
-    "prettier": "^3.5.2",
-    "typescript": "^5.7.3",
-    "wrangler": "^3.109.2"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "core-js-pure",
-      "esbuild",
-      "sharp",
-      "workerd"
-    ]
-  },
-  "packageManager": "pnpm@10.4.0+sha512.6b849d0787d97f8f4e1f03a9b8ff8f038e79e153d6f11ae539ae7c435ff9e796df6a862c991502695c7f9e8fac8aeafc1ac5a8dab47e36148d183832d886dd52"
+	"name": "discord-mailbox",
+	"version": "2.1.0",
+	"description": "",
+	"main": "src/workers.ts",
+	"scripts": {
+		"dev": "wrangler dev --remote",
+		"deploy": "wrangler deploy",
+		"generate-types": "wrangler types",
+		"lint": "eslint"
+	},
+	"author": "Minsu Kim <minsu.kim@lunaiz.com>",
+	"dependencies": {
+		"@discordjs/rest": "^2.6.1",
+		"discord-api-types": "^0.38.49",
+		"discord-interactions": "^4.4.0",
+		"h3": "^1.15.11",
+		"html-to-text": "^10.0.0",
+		"marked": "^18.0.6",
+		"mimetext": "^3.0.28",
+		"postal-mime": "^2.7.5"
+	},
+	"devDependencies": {
+		"@types/html-to-text": "^9.0.4",
+		"@types/mimetext": "^2.0.4",
+		"@types/node": "^26.1.1",
+		"prettier": "^3.9.5",
+		"typescript": "^7.0.2",
+		"wrangler": "^4.110.0"
+	},
+	"packageManager": "pnpm@11.13.0+sha512.88d94724d8f2e6c186744a5584c6e59ecac869ec7ba15e9cb4cd628e8dc7066820b2481d8ee3b51ea8da323a7378068aa58c556a3720d32b7c20a051d088363a"
 }

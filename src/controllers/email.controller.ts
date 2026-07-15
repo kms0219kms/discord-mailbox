@@ -1,9 +1,11 @@
 import { convert } from 'html-to-text';
 import { Email } from 'postal-mime';
-import type { APIChannelBase, ChannelType } from 'discord-api-types/v10';
+import type { APIChannelBase, APIMessage, ChannelType } from 'discord-api-types/v10';
 
 import { MailBoxService } from '../services/mailbox.service';
 import { SendMailService } from '../services/sendmail.service';
+
+import { getChannelType, isForumLikeChannel } from '../discord/channel';
 
 import { MailBox, MailParamsBase } from '../types/mailbox';
 
@@ -80,6 +82,41 @@ const handleNewEmail = async (
 	const ticketId = mailBoxService._createTicketId();
 	const appliedTags = getAppliedTags(message, env);
 
+	const channelType = await getChannelType(env.DISCORD_CHANNEL_ID, env);
+
+	const threadId = isForumLikeChannel(channelType)
+		? await createForumPost(email, emailText, ticketId, message, env, mailBoxService, appliedTags)
+		: await createChannelThread(email, emailText, ticketId, message, env, mailBoxService);
+
+	if (!threadId) return;
+
+	await env.DB.prepare('INSERT INTO Tickets (Id, ThreadId, Subject, Author, Receiver) VALUES (?, ?, ?, ?, ?)')
+		.bind(ticketId, threadId, email.subject ?? '(제목 없음)', email.from?.address ?? '(알 수 없음)', message.to)
+		.run();
+
+	console.log(`[New Handler] Ticket Created: ${ticketId}`);
+
+	const mailParams: MailParamsBase = {
+		id: ticketId,
+		subject: email.subject ?? '(제목 없음)',
+	};
+
+	await sendMailService.replyMail(message, mailParams);
+};
+
+/**
+ * Forum/Media channels can create a post (which is itself a thread) directly,
+ * optionally tagged, in a single request.
+ */
+const createForumPost = async (
+	email: Email,
+	emailText: string,
+	ticketId: string,
+	message: ForwardableEmailMessage,
+	env: Env,
+	mailBoxService: MailBoxService,
+	appliedTags: string[],
+): Promise<string | undefined> => {
 	const formData = mailBoxService.generateRequestBody(email, emailText, ticketId, message, appliedTags);
 	const createNewPost = await fetch(`https://discord.com/api/v10/channels/${env.DISCORD_CHANNEL_ID}/threads`, {
 		method: 'POST',
@@ -94,20 +131,61 @@ const handleNewEmail = async (
 
 	if (!createNewPost.ok) {
 		console.error(`[New Handler] Discord Notification Failed: (${createNewPost.status}) ${createNewPost.statusText}`);
-	} else {
-		await env.DB.prepare('INSERT INTO Tickets (Id, ThreadId, Subject, Author, Receiver) VALUES (?, ?, ?, ?, ?)')
-			.bind(ticketId, postResponse.id, email.subject ?? '(제목 없음)', email.from.address, message.to)
-			.run();
-
-		console.log(`[New Handler] Ticket Created: ${ticketId}`);
-
-		const mailParams: MailParamsBase = {
-			id: ticketId,
-			subject: email.subject ?? '(제목 없음)',
-		};
-
-		await sendMailService.replyMail(message, mailParams);
+		return undefined;
 	}
+
+	return postResponse.id;
+};
+
+/**
+ * Regular text/announcement channels can't create posts directly, so the email is sent
+ * as a normal message first, and a thread is then started from that message.
+ */
+const createChannelThread = async (
+	email: Email,
+	emailText: string,
+	ticketId: string,
+	message: ForwardableEmailMessage,
+	env: Env,
+	mailBoxService: MailBoxService,
+): Promise<string | undefined> => {
+	const messageFormData = mailBoxService.generateMessageRequestBody(email, emailText, message);
+	const sendNewMessage = await fetch(`https://discord.com/api/v10/channels/${env.DISCORD_CHANNEL_ID}/messages`, {
+		method: 'POST',
+		body: messageFormData,
+		headers: {
+			Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN,
+		},
+	});
+
+	const messageResponse = await sendNewMessage.json<APIMessage>();
+	console.log(`[New Handler] Discord Response: ${JSON.stringify(messageResponse)}`);
+
+	if (!sendNewMessage.ok) {
+		console.error(`[New Handler] Discord Notification Failed: (${sendNewMessage.status}) ${sendNewMessage.statusText}`);
+		return undefined;
+	}
+
+	const createNewThread = await fetch(`https://discord.com/api/v10/channels/${env.DISCORD_CHANNEL_ID}/messages/${messageResponse.id}/threads`, {
+		method: 'POST',
+		body: JSON.stringify({
+			name: mailBoxService.generateThreadName(ticketId, email.subject),
+		}),
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: 'Bot ' + env.DISCORD_BOT_TOKEN,
+		},
+	});
+
+	const threadResponse = await createNewThread.json<APIChannelBase<ChannelType.PublicThread>>();
+	console.log(`[New Handler] Discord Response: ${JSON.stringify(threadResponse)}`);
+
+	if (!createNewThread.ok) {
+		console.error(`[New Handler] Discord Notification Failed: (${createNewThread.status}) ${createNewThread.statusText}`);
+		return undefined;
+	}
+
+	return threadResponse.id;
 };
 
 const getAppliedTags = (message: ForwardableEmailMessage, env: Env): string[] => {

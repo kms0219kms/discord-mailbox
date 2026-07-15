@@ -1,19 +1,19 @@
 {
 	"name": "discord-mailbox",
 	"main": "src/workers.ts",
-	"compatibility_date": "2025-02-16",
+	"compatibility_date": "2026-07-16",
 	"observability": {
-		"enabled": true
+		"enabled": true,
 	},
 	"placement": {
-	  	"mode": "smart"
+		"mode": "smart",
 	},
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "",
-			"database_id": ""
-		}
+			"database_id": "",
+		},
 	],
 	"vars": {
 		"FORWARD_TO_ADDRESS": "",
@@ -28,6 +28,6 @@
 		"DISCORD_CHANNEL_ID": "",
 
 		"DISCORD_EMBED_LIMIT": 4096,
-		"DISCORD_FILE_LIMIT": 8000000
-	}
+		"DISCORD_FILE_LIMIT": 8000000,
+	},
 }

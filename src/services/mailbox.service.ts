@@ -12,6 +12,10 @@ export class MailBoxService {
 		return str.length > limit ? `${str.substring(0, limit - 3)}...` : str;
 	}
 
+	public generateThreadName(ticketId: string, subject: string | null | undefined) {
+		return `#${ticketId}: ${this._trim(subject ?? '(제목 없음)', 100)}`;
+	}
+
 	public _createTicketId() {
 		// From: https://github.com/ai/nanoid/blob/main/non-secure/index.js
 		const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -51,7 +55,7 @@ export class MailBoxService {
 		formData.append(
 			'payload_json',
 			JSON.stringify({
-				name: `#${ticketId}: ${this._trim(email.subject ?? '(제목 없음)', 100)}`,
+				name: this.generateThreadName(ticketId, email.subject),
 				message: {
 					embeds: [
 						{
@@ -61,8 +65,8 @@ export class MailBoxService {
 									? `${emailText.substring(0, this.env.DISCORD_EMBED_LIMIT - 3)}...`
 									: emailText,
 							author: {
-								name: `${this._trim(email.from.name ?? '(발신자 정보 없음)', 100)}${email.from.name.length > 64 ? '\n' : ' '}<${this._trim(
-									email.from.address ?? '(알 수 없음)',
+								name: `${this._trim(email.from?.name ?? '(발신자 정보 없음)', 100)}${(email.from?.name?.length ?? 0) > 64 ? '\n' : ' '}<${this._trim(
+									email.from?.address ?? '(알 수 없음)',
 									100,
 								)}>`,
 							},
@@ -110,8 +114,8 @@ export class MailBoxService {
 								? `${emailText.substring(0, this.env.DISCORD_EMBED_LIMIT - 3)}...`
 								: emailText,
 						author: {
-							name: `${this._trim(email.from.name ?? '(발신자 정보 없음)', 100)}${email.from.name.length > 64 ? '\n' : ' '}<${this._trim(
-								email.from.address ?? '(알 수 없음)',
+							name: `${this._trim(email.from?.name ?? '(발신자 정보 없음)', 100)}${(email.from?.name?.length ?? 0) > 64 ? '\n' : ' '}<${this._trim(
+								email.from?.address ?? '(알 수 없음)',
 								100,
 							)}>`,
 						},

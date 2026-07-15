@@ -24,7 +24,7 @@ async function _getMemberProfile(userId: string, avatarHash: string | null) {
 
 	const arrayBuffer = await image.arrayBuffer();
 
-	const base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+	const base64String = btoa(String.fromCodePoint(...new Uint8Array(arrayBuffer)));
 	return `data:${avatarHash.startsWith('a_') ? 'image/gif' : 'image/png'};base64,${base64String}`;
 }
 
